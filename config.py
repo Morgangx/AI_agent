@@ -1,0 +1,1 @@
+CHARACTER_LIMIT: int = 10000
