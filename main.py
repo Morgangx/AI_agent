@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from google.genai.types import GenerateContentResponse, GenerateContentResponseUsageMetadata
+from prompts import system_prompt
 
 def main() -> None:
     load_dotenv()
@@ -17,11 +18,16 @@ def main() -> None:
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args: argparse.Namespace = parser.parse_args()
     messages: list[types.Content] = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
-    response: GenerateContentResponse = client.models.generate_content(
-        model="gemini-2.5-flash", contents=messages)
+    response: GenerateContentResponse = client.models.generate_content( # type: ignore
+        model="gemini-2.5-flash",
+        contents=messages,
+        config = types.GenerateContentConfig(system_instruction=system_prompt)
+        )
+
     usage_metadada: GenerateContentResponseUsageMetadata | None = response.usage_metadata
     if usage_metadada == None:
         raise RuntimeError("No usage metadata found!")
+    
     if args.verbose:
         print(f"User prompt: {prompt}")
         print(f"Prompt tokens: {usage_metadada.prompt_token_count}")
