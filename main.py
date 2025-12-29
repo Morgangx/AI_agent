@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 from google.genai.types import GenerateContentResponse, GenerateContentResponseUsageMetadata
 from prompts import system_prompt
+from functions.call_function import available_functions
 
 def main() -> None:
     load_dotenv()
@@ -21,19 +22,26 @@ def main() -> None:
     response: GenerateContentResponse = client.models.generate_content( # type: ignore
         model="gemini-2.5-flash",
         contents=messages,
-        config = types.GenerateContentConfig(system_instruction=system_prompt)
+        config = types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt)
         )
 
     usage_metadada: GenerateContentResponseUsageMetadata | None = response.usage_metadata
     if usage_metadada == None:
         raise RuntimeError("No usage metadata found!")
     
+    function_calls: list[types.FunctionCall] | None = response.function_calls
+
     if args.verbose:
         print(f"User prompt: {prompt}")
         print(f"Prompt tokens: {usage_metadada.prompt_token_count}")
         print(f"Response tokens: {usage_metadada.candidates_token_count}")
-        print("Response:")
-    print(response.text)
+        
+    print("Response:")
+    if function_calls is None:
+        print(response.text)
+    else:
+        for function_call in function_calls:
+            print(f"Calling function: {function_call.name}({function_call.args})")
 
 if __name__ == "__main__":
     main()

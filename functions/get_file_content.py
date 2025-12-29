@@ -1,6 +1,7 @@
 import os
 from functions.utils import valid_target_path
 from config import CHARACTER_LIMIT
+from google.genai import types
 
 def get_file_content(working_directory: str, file_path: str) -> str:
     try:
@@ -17,3 +18,17 @@ def get_file_content(working_directory: str, file_path: str) -> str:
     except Exception as e:
         return f'Error: {e}'
     
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Get contents of a specified file relative to the working directory, providing the file content as string",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        required=["file_path"],
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="File path to get the content from, relative to the working directory.",
+            ),
+        },
+    ),
+)

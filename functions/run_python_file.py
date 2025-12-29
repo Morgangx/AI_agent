@@ -1,6 +1,7 @@
 import os
 import subprocess
 from functions.utils import valid_target_path
+from google.genai import types
 
 def run_python_file(working_directory: str, file_path: str, args: None | tuple[str] = None) -> str:
     try:
@@ -29,3 +30,25 @@ def run_python_file(working_directory: str, file_path: str, args: None | tuple[s
         return output.removesuffix("\n")
     except Exception as e:
         return f"Error: executing Python file: {e}"
+    
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Executes python file relative to the working director with optional parameters.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        required=["file_path"],
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="File path the python file, relative to the working directory.",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(
+                    type=types.Type.STRING,
+                ),
+                description="Aditional parametes for the python script, default is None (no aditional parameters)."
+            ),
+        },
+    ),
+)
