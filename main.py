@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 from google.genai.types import GenerateContentResponse, GenerateContentResponseUsageMetadata
 from prompts import system_prompt
-from functions.call_function import available_functions
+from functions.call_function import available_functions, call_function
 
 def main() -> None:
     load_dotenv()
@@ -14,7 +14,6 @@ def main() -> None:
         raise RuntimeError("API key not found")
     client: genai.Client = genai.Client(api_key=api_key)
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description="Chatbot")
-    prompt: str = "Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum."
     parser.add_argument("user_prompt", type=str, help="User prompt")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args: argparse.Namespace = parser.parse_args()
@@ -32,7 +31,7 @@ def main() -> None:
     function_calls: list[types.FunctionCall] | None = response.function_calls
 
     if args.verbose:
-        print(f"User prompt: {prompt}")
+        print(f"User prompt: {parser}")
         print(f"Prompt tokens: {usage_metadada.prompt_token_count}")
         print(f"Response tokens: {usage_metadada.candidates_token_count}")
         
@@ -40,8 +39,19 @@ def main() -> None:
     if function_calls is None:
         print(response.text)
     else:
+        function_results: list[types.Part] = []
         for function_call in function_calls:
-            print(f"Calling function: {function_call.name}({function_call.args})")
+            func_result: types.Content = call_function(function_call)
+            if not func_result.parts:
+                raise Exception("Function result parts don't exist")
+            func_response: types.FunctionResponse = func_result.parts[0].function_response # type: ignore
+            if not func_response:
+                raise Exception("FuntionResponse object doesn't exist")
+            if not func_response.response:
+                raise Exception("No response from the function call")
+            function_results.append(func_result.parts[0])
+            if args.verbose:
+                print(f"-> {func_result.parts[0].function_response.response}") # type: ignore
 
 if __name__ == "__main__":
     main()
